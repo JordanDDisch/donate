@@ -58,6 +58,15 @@ var Sequential = React.createClass({
         var state = this.state;
         state.status = "interactive";
 
+        var nbDonationForm = document.getElementById('donate_page_new_donation_form');
+        
+        setTimeout(function() {
+            nbDonationForm.parentNode.removeChild(nbDonationForm);
+            console.log("yo");
+        }.bind(this), 5000);
+
+        state.authenticityToken = nbDonationForm.querySelectorAll('[name="authenticity_token"]')[0].value;
+
         // If debug-thanks=true is set, go directly to our Thank You page
         if ( queries["debug-thanks"] === "true" ) {
             state.form.step = ( this.state.steps.length );
@@ -190,76 +199,7 @@ var Sequential = React.createClass({
     },
 
     handleSubmit: function( event ) {
-        event.preventDefault();
-
-        // Prevent double-submissions (which convio will allow...)
-        if ( this.state.status === "interactive" ) {
-            if ( validator.form( this.state.form ) ) {
-                var self = this;
-                var form = this.state.form;
-
-                if ( typeof global.rsd.options.onSubmit === "function" ) {
-                    global.rsd.options.onSubmit();
-                }
-
-                this.setState({ status: "submitting" });
-
-                // this code will work for any processor, except stripe
-                processors[ global.rsd.options.processor ].submit( form, function( error, data, message ) {
-                    if ( error ) {
-                        if ( message ) {
-                            // If a message was passed, it's more imporant than any data we recieved
-                            self.setState({ error: message, status: "interactive" });
-                        } else {
-                            // In this case, we're looking for a list of fields that were erratic
-                            var first = 0;
-
-                            // Errors pass back "error objects" in data which is an array of
-                            // objects like { field: "", message: "" }
-                            for ( var i in data ) {
-                                var field = data[i];
-                                var name = field.field;
-                                var step = form.fields[ name ].step;
-
-                                // Assign invalid state and error message to field
-                                form.fields[ name ].valid = false;
-                                form.fields[ name ].error = field.message;
-
-                                if ( !first ) {
-                                    first = step;
-                                }
-                            }
-
-                            // Switch to the first errors step
-                            if ( data.length > 0 ) {
-                                self.setState({
-                                    form: form,
-                                    step: first,
-                                    status: "interactive"
-                                });
-                            } else {
-                                self.setState({
-                                    form: form,
-                                    status: "interactive",
-                                    error: "An unexpected error has occurred"
-                                });
-                            }
-                        }
-                    } else {
-                        // This blindly assumes our last step is the thank you - is it?
-                        // Maybe maybe switchStep work with IDs too?
-                        self.switchStep( self.state.steps.length );
-
-                        self.setState({ status: "complete" });
-                    }
-                });
-            } else {
-                // Form is not all valid -- run the validator to flag fields
-                var results = validator.run( false, this.state, this.refs );
-
-                this.setState({ form: results.form, steps: results.steps });
-            }
-        }
+        
     },
 
     getValue: function( field ) {
@@ -282,117 +222,16 @@ var Sequential = React.createClass({
 
         return (
             <div className={ classes }>
-                <div className="patronage-donate-header">
-                    <PaginatorLinks current={ this.state.form.step } steps={ this.state.steps } switchStep={ this.switchStep } />
-                </div>
-
-                <form id="patronage-donate-form" onChange={ this.handleChange } onBlur={ this.handleBlur } onSubmit={ this.handleSubmit }>
-                    <div className="patronage-donate-intro" dangerouslySetInnerHTML={{ __html: this.props.options.introContent }}></div>
-                    <ErrorsDisplay form={ this.state.form } step={ this.state.form.step } message={ this.state.error } />
-
-                    <PaginatorSteps
-                        step={ this.state.form.step }
-                        switchStep={ this.switchStep }
-                        parentState={ this.state }
-                        setParentState={ this.setParentState } >
-
-                        <Step>
-                            <h2>Gift Information</h2>
-
-                            <div className="row">
-                                <div className="col-sm-9">
-                                    <Options ref={ fields.amountToggle } name={ fields.amountToggle } label="Amount" prefix="$" values={ global.rsd.options.amounts } form={ this.state.form } transform={ transformers.amount } validator={ validator.rules.amount } />
-                                </div>
-
-                                <div className="col-sm-3">
-                                    <Field glyph="$" ref={ fields.amountOther } name={ fields.amountOther } label="Other amount" form={ this.state.form } transform={ transformers.amount } validator={ validator.rules.amount } />
-                                </div>
-                            </div>
-                        </Step>
-
-                        <Step>
-                            <h2>Personal Information</h2>
-
-                            <div className="row">
-                                <div className="col-sm-6">
-                                    <Field ref={ fields.firstName } name={ fields.firstName } label="First Name" form={ this.state.form } required />
-                                </div>
-
-                                <div className="col-sm-6">
-                                    <Field ref={ fields.lastName } name={ fields.lastName } label="Last Name" form={ this.state.form } required />
-                                </div>
-                            </div>
-
-                            <div className="row">
-                                <div className="col-sm-12">
-                                    <Field ref={ fields.email } name={ fields.email } label="Email" validator={ validator.rules.email } form={ this.state.form } required />
-                                </div>
-                            </div>
-
-                            <div className="row">
-                                <div className="col-sm-12">
-                                    <Field ref={ fields.addressStreet1 } name={ fields.addressStreet1 } label="Street Address" form={ this.state.form } required />
-                                </div>
-                            </div>
-
-                            <div className="row">
-                                <div className="col-sm-12">
-                                    <Field ref={ fields.addressStreet2 } name={ fields.addressStreet2 } label="Street Address, line 2" form={ this.state.form } />
-                                </div>
-                            </div>
-
-                            <div className="row">
-                                <div className="col-sm-5">
-                                    <Field ref={ fields.addressCity } name={ fields.addressCity } label="City" form={ this.state.form } required />
-                                </div>
-
-                                <div className="col-sm-4">
-                                    <Select ref={ fields.addressState } name={ fields.addressState } label="State" data={ states } form={ this.state.form } required />
-                                </div>
-
-                                <div className="col-sm-3">
-                                    <Field ref={ fields.addressPostal } name={ fields.addressPostal } label="Zip Code" validator={ validator.rules.postal } form={ this.state.form } required />
-                                </div>
-                            </div>
-
-                            <div className="row">
-                                <div className="col-sm-12">
-                                    <Field ref={ fields.phone } name={ fields.phone } label="Phone Number" form={ this.state.form } />
-                                </div>
-                            </div>
-                        </Step>
-
-                        <Step context="submit">
-                            <h2>Payment Information</h2>
-                            <div className="row">
-                                <div className="col-sm-12">
-                                    <Field ref={ fields.cardNumber } name={ fields.cardNumber } label="Card Number" validator={ validator.rules.card } transform={ transformers.card } tags={ tags.card } form={ this.state.form } required />
-                                </div>
-                            </div>
-
-                            <div className="row">
-                                <div className="col-sm-6">
-                                    <Field ref={ fields.cardExpires } name={ fields.cardExpires } label="Expiration Date" placeholder="mm / yy" validator={ validator.rules.expires } transform={ transformers.expires } form={ this.state.form } required />
-                                </div>
-
-                                <div className="col-sm-6">
-                                    <Field ref={ fields.cardCVC } name={ fields.cardCVC } label="CVC" form={ this.state.form } required />
-                                </div>
-                            </div>
-                        </Step>
-
-                        <Step context="thanks">
-                            <div className="patronage-donate-thanks" dangerouslySetInnerHTML={{ __html: this.props.options.thanksContent }}></div>
-                        </Step>
-                    </PaginatorSteps>
-
-                    <PaginatorButton
-                        steps={ this.state.steps }
-                        current={ this.state.form.step }
-                        amount={ this.state.amount }
-                        switchStep={ this.switchStep }
-                        parentState={ this.state } />
+                <form novalidate="" id="donate_page_new_donation_form" class="staged-donation" method="POST" autocomplete="on" action="/forms/donations">
+                    <input name="authenticity_token" type="hidden" value={ this.state.authenticityToken } />
+                    <input name="page_id" type="hidden" value="3731" />
+                    <input name="return_to" type="hidden" value="https://uniteamerica-centristproject.nationbuilder.com/donate" />
+                    <input name="email_address" type="text" class="text" id="email_address" autocomplete="off" />
+                    <input type="hidden" name="donation[is_confirmed]" value="1" />
+                    <input class="checkbox__input" id="is_volunteer" name="is_volunteer" type="checkbox" value="1" /> 
+                    <input class="button" type="submit" name="commit" value="Process Donation" />
                 </form>
+
             </div>
         );
     }
