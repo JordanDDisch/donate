@@ -5,9 +5,6 @@
   "readme": "README.md",
   "repository": "https://github.com/patronage/donate",
   "main": "index.js",
-  "engines": {
-    "node": "~0.10"
-  },
   "author": "",
   "license": "propritary",
   "dependencies": {
@@ -20,8 +17,8 @@
     "browser-sync": "^2.7.12",
     "browserify": "^10.2.4",
     "classnames": "^2.1.2",
-    "gulp": "^3.8.0",
-    "gulp-autoprefixer": "^2.0.0",
+    "gulp": "^3.9.1",
+    "gulp-autoprefixer": "^4.1.0",
     "gulp-csso": "^1.0.0",
     "gulp-debug": "^2.0.1",
     "gulp-load-plugins": "^1.0.0-rc.1",
@@ -36,5 +33,9 @@
     "rimraf": "^2.2.8",
     "run-sequence": "^1.0.2",
     "vinyl-source-stream": "^1.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0",
+    "gulp": "gulp"
   }
 }
